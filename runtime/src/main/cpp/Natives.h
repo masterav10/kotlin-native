@@ -136,6 +136,10 @@ OBJ_GETTER0(Kotlin_konan_internal_undefined);
 void Kotlin_konan_internal_GC_suspend(KRef);
 void Kotlin_konan_internal_GC_resume(KRef);
 
+// Random operations.
+KInt Kotlin_random();
+void Kotlin_srandom(KInt seed);
+
 #ifdef __cplusplus
 }
 #endif

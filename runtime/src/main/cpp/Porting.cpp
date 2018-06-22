@@ -331,6 +331,34 @@ long getpagesize() {
 #endif
 #endif
 
+#ifdef KONAN_WASM
+extern "C" long Konan_random();
+#endif
+
+long random() {
+#ifdef KONAN_WASM
+    return Konan_random();
+#else
+#if KONAN_WINDOWS || KONAN_ZEPHYR
+    return ::rand();
+#else
+    return ::random();
+#endif
+#endif
+}
+
+void srandom(unsigned int seed) {
+#if KONAN_WASM
+    // seeded random is not available
+#else
+#if KONAN_WINDOWS || KONAN_ZEPHYR
+    ::srand(seed);
+#else
+    ::srandom(seed);
+#endif
+#endif
+}
+
 }  // namespace konan
 
 extern "C" {

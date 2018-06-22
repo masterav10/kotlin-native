@@ -179,6 +179,10 @@ var konan_dependencies = {
             int32ToHeap(low, pointer);
             int32ToHeap(high, pointer+4);
         },
+        Konan_random: function() {
+            var max = Math.pow(2, 32) - 1;
+            return Math.random() * max;
+        },
         stdin: 0, // This is for fgets(,,stdin) to resolve. It is ignored.
         // TODO: Account for fd and size.
         write: function(fd, str, size) {
