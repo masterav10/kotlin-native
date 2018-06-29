@@ -21,6 +21,7 @@ import kotlin.system.getTimeNanos
 
 abstract class Random {
     abstract fun nextInt(): Int
+    abstract fun nextInt(bound: Int): Int
 
     abstract fun nextLong(): Long
 
@@ -46,6 +47,27 @@ abstract class Random {
          * Returns a pseudo-random Int number.
          */
         override fun nextInt(): Int = random()
+
+        /**
+         * Returns a pseudo-random Int value between 0 and specified value (exclusive)
+         */
+        override fun nextInt(bound: Int): Int {
+            if (bound <= 0) throw IllegalArgumentException("Incorrect bound: $bound")
+
+            // As there are no guarantee for the rand on some platforms
+            // about low-order bits distribution use the same technique as Java does
+            // throwing away low-order bits
+            if (bound and (bound - 1) == 0) {
+                return ((bound * random().toLong()) shr 31).toInt();
+            }
+
+            var m: Int
+            do {
+                var r = random()
+                m = r % bound
+            } while (r - m + (bound - 1) < 0)
+            return m
+        }
 
         /**
          * Returns a pseudo-random Long number.

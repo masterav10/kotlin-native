@@ -17,8 +17,10 @@
 package kotlin.collections
 
 import kotlin.comparisons.*
+import kotlin.random.*
 
 // Copies typed varargs array to an array of objects
+// TODO: generally wrong, wrt specialization.
 internal actual fun <T> Array<out T>.copyToArrayOfAny(isVarargs: Boolean): Array<out Any?> =
         if (isVarargs)
             // if the array came from varargs and already is array of Any, copying isn't required.
@@ -233,9 +235,7 @@ public actual fun <T> MutableList<T>.fill(value: T): Unit {
 @SinceKotlin("1.2")
 public actual fun <T> MutableList<T>.shuffle(): Unit {
     for (i in lastIndex downTo 1) {
-        // FIXME: implement a good random
-        //val j = rand(i + 1)
-        val j = i / 2
+        val j = Random.nextInt(i + 1)
         val copy = this[i]
         this[i] = this[j]
         this[j] = copy
