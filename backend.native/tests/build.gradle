@@ -490,8 +490,12 @@ task runtime_basic_exit(type: RunStandaloneKonanTest) {
 }
 
 task runtime_random(type: RunKonanTest) {
-    disabled = (project.testTarget == 'wasm32')
     source = "runtime/basic/random.kt"
+}
+
+task runtime_worker_random(type: RunKonanTest) {
+    disabled = (project.testTarget == 'wasm32')
+    source = "runtime/basic/worker_random.kt"
 }
 
 task hello0(type: RunKonanTest) {
