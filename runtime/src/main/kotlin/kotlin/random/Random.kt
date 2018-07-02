@@ -31,17 +31,19 @@ abstract class Random {
      * and seed is shared between all workers and native threads.
      */
     companion object : Random() {
+        private val _seed = AtomicInt(getTimeNanos().toInt())
         init { updateSeed() }
 
         /**
          * Random generator seed value.
          */
-        var seed: Int = getTimeNanos().toInt()
+        var seed: Int
+            get() = _seed.get()
             set(value) {
-                field = value
+                _seed.compareAndSwap(_seed.get(), value)
                 updateSeed()
             }
-        private inline fun updateSeed() = srandom(seed)
+        private inline fun updateSeed() = srandom(_seed.get())
 
         /**
          * Returns a pseudo-random Int number.

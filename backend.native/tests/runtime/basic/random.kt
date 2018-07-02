@@ -6,25 +6,17 @@ import kotlin.random.*
 import kotlin.system.*
 import kotlin.test.*
 
-private inline fun <reified T> getRandomNumbers(amount: Int = 10, producer: () -> T): List<T> {
-    val list = ArrayList<T>()
-    for (i in 0 .. amount - 1) {
-        list.add(producer())
-    }
-    return list
-}
-
 /**
  * Tests that setting the same seed make random generate the same sequence
  */
 private inline fun <reified T> testReproducibility(seed: Int, generator: () -> T) {
     // Reset seed. This will make Random to start a new sequence
     Random.seed = seed
-    val first: List<T> = getRandomNumbers(producer = generator)
+    val first = Array<T>(50, { i -> generator() }).toList()
 
     // Reset seed and try again
     Random.seed = seed
-    val second: List<T> = getRandomNumbers(producer = generator)
+    val second = Array<T>(50, { i -> generator() }).toList()
     assertTrue(first == second, "FAIL: got different sequences of generated values " +
             "first: $first, second: $second")
 }
@@ -34,10 +26,10 @@ private inline fun <reified T> testReproducibility(seed: Int, generator: () -> T
  */
 private inline fun <reified T> testDifference(generator: () -> T) {
     Random.seed = 12345678
-    val first: List<T> = getRandomNumbers(producer = generator)
+    val first = Array<T>(100, { i -> generator() }).toList()
 
     Random.seed = 87654321
-    val second: List<T> = getRandomNumbers(producer = generator)
+    val second = Array<T>(100, { i -> generator() }).toList()
     assertTrue(first != second, "FAIL: got the same sequence of generated values " +
             "first: $first, second: $second")
 }
@@ -72,8 +64,7 @@ fun testRandomWorkers() {
         // Produce a list of random numbers in each worker
         val futures = Array(workers.size, { workerIndex ->
             workers[workerIndex].schedule(TransferMode.CHECKED, { workerIndex }) { input ->
-                Random.seed = input * 12345
-                getRandomNumbers(1) { Random.nextInt() }
+                Array(50, { Random.nextInt() }).toList()
             }
         })
         // Now collect all results into current attempt's list
