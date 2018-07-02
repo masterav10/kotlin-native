@@ -16,7 +16,8 @@
 package kotlin.random
 
 import konan.internal.*
-import konan.worker.AtomicInt
+import konan.worker.AtomicLong
+import kotlin.random.Random.Companion.MULTIPLIER
 import kotlin.system.getTimeNanos
 
 abstract class Random {
@@ -26,29 +27,30 @@ abstract class Random {
     abstract fun nextLong(): Long
 
     /**
-     * A default pseudo-random generator that relies on POSIX's random/srandom.
-     * This implementation is a singleton generator. A sequence of generated numbers
-     * and seed is shared between all workers and native threads.
+     * A default pseudo-random LCD-generator.
      */
     companion object : Random() {
-        private val _seed = AtomicInt(getTimeNanos().toInt())
-        init { updateSeed() }
+        private const val MULTIPLIER = 0x5deece66dL
+        private val _seed = AtomicLong(mult(getTimeNanos()))
 
         /**
          * Random generator seed value.
          */
-        var seed: Int
+        var seed: Long
             get() = _seed.get()
             set(value) {
-                _seed.compareAndSwap(_seed.get(), value)
-                updateSeed()
+                _seed.compareAndSwap(_seed.get(), mult(value))
             }
-        private inline fun updateSeed() = srandom(_seed.get())
+
+        private fun mult(value: Long) = (value xor MULTIPLIER) and ((1L shl 48) - 1)
 
         /**
          * Returns a pseudo-random Int number.
          */
-        override fun nextInt(): Int = random()
+        override fun nextInt(): Int {
+            seed = (seed * MULTIPLIER + 0xbL) and ((1L shl 48) - 1);
+            return (seed ushr 16).toInt();
+        }
 
         /**
          * Returns a pseudo-random Int value between 0 and specified value (exclusive)
@@ -56,16 +58,13 @@ abstract class Random {
         override fun nextInt(bound: Int): Int {
             if (bound <= 0) throw IllegalArgumentException("Incorrect bound: $bound")
 
-            // As there are no guarantee for the rand on some platforms
-            // about low-order bits distribution use the same technique as Java does
-            // throwing away low-order bits
             if (bound and (bound - 1) == 0) {
-                return ((bound * random().toLong()) shr 31).toInt();
+                return ((bound * nextInt().toLong()) shr 31).toInt();
             }
 
             var m: Int
             do {
-                var r = random()
+                var r = nextInt()
                 m = r % bound
             } while (r - m + (bound - 1) < 0)
             return m
@@ -74,6 +73,6 @@ abstract class Random {
         /**
          * Returns a pseudo-random Long number.
          */
-        override fun nextLong(): Long = (random().toLong() shl 32) + random().toLong()
+        override fun nextLong(): Long = (nextInt().toLong() shl 32) + nextInt().toLong()
     }
 }
