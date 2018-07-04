@@ -50,3 +50,16 @@ fun testDiffInt() = testDifference { Random.nextInt() }
 
 @Test
 fun testDiffLong() = testDifference { Random.nextLong() }
+
+@Test
+fun testBoundInt() {
+    testReproducibility(1000L, { Random.nextInt(1000) })
+
+    // test bounds
+    val bound = 5000
+    val a = Array<Int>(100, { Random.nextInt(bound) })
+    a.forEach {
+        assertTrue(it >= 0, "Should be: $it >= 0")
+        assertTrue(it < bound, "Should be: $it < $bound")
+    }
+}
