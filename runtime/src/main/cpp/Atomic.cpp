@@ -63,7 +63,7 @@ KLong Kotlin_AtomicLong_compareAndSwap(KRef thiz, KLong expectedValue, KLong new
     // TODO: reconsider, once target MIPS can do proper 64-bit CAS.
     static int lock = 0;
     while (compareAndSwap(&lock, 0, 1) != 0);
-    KLong* address = reintepret_cast<KLong*>(thiz + 1);
+    KLong* address = reinterpret_cast<KLong*>(thiz + 1);
     KLong old = *address;
     if (old == expectedValue) {
       *address = newValue;
