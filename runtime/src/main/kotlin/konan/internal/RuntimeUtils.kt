@@ -158,9 +158,3 @@ internal fun <T> listOfInternal(vararg elements: T): List<T> {
         result.add(elements[i])
     return result
 }
-
-@SymbolName("Kotlin_random")
-external internal fun random(): Int
-
-@SymbolName("Kotlin_srandom")
-external internal fun srandom(seed: Int): Unit
