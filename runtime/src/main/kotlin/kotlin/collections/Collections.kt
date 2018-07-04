@@ -21,7 +21,6 @@ import kotlin.random.*
 
 // Copies typed varargs array to an array of objects
 // TODO: generally wrong, wrt specialization.
-@FixmeSpecialization
 internal actual fun <T> Array<out T>.copyToArrayOfAny(isVarargs: Boolean): Array<out Any?> =
         if (isVarargs)
             // if the array came from varargs and already is array of Any, copying isn't required.
