@@ -14,11 +14,11 @@ fun testRandomWorkers() {
     val attempts = 3
     val results = Array(attempts, { ArrayList<Int>() } )
     for (attempt in 0 until attempts) {
+        Random.seed = seed
         // Produce a list of random numbers in each worker
         val futures = Array(workers.size, { workerIndex ->
-            workers[workerIndex].schedule(TransferMode.CHECKED, { seed }) { seed ->
-                Random.seed = seed
-                Array(50, { Random.nextInt() }).toList()
+            workers[workerIndex].schedule(TransferMode.CHECKED, { workerIndex }) { input ->
+                Array(10, { Random.nextInt() }).toList()
             }
         })
         // Now collect all results into current attempt's list
