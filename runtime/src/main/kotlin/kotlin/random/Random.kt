@@ -27,7 +27,7 @@ abstract class Random {
     abstract fun nextLong(): Long
 
     /**
-     * A default pseudo-random LCD-generator.
+     * A default pseudo-random linear congruential generator.
      */
     companion object : Random() {
         private const val MULTIPLIER = 0x5deece66dL
@@ -38,17 +38,19 @@ abstract class Random {
          */
         var seed: Long
             get() = _seed.get()
-            set(value) {
-                _seed.compareAndSwap(_seed.get(), mult(value))
-            }
+            set(value) = update(mult(value))
 
         private fun mult(value: Long) = (value xor MULTIPLIER) and ((1L shl 48) - 1)
+
+        private fun update(seed: Long) {
+            _seed.compareAndSwap(_seed.get(), seed)
+        }
 
         /**
          * Returns a pseudo-random Int number.
          */
         override fun nextInt(): Int {
-            seed = (seed * MULTIPLIER + 0xbL) and ((1L shl 48) - 1);
+            update((seed * MULTIPLIER + 0xbL) and ((1L shl 48) - 1));
             return (seed ushr 16).toInt();
         }
 

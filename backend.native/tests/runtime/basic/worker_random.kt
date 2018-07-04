@@ -29,10 +29,6 @@ fun testRandomWorkers() {
         }
     }
 
-    results.forEach { list -> list.sort() }
-    assertTrue(results[0] == results[1], "FAIL: got different sequences of generated values " +
-            "first: ${results[0]}, second: ${results[1]}")
-
     workers.forEach {
         it.requestTermination().consume { _ -> }
     }
