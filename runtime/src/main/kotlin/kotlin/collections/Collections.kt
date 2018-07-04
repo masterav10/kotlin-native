@@ -19,7 +19,7 @@ package kotlin.collections
 import kotlin.comparisons.*
 import kotlin.random.*
 
-// copies typed varargs array to array of objects
+// Copies typed varargs array to an array of objects
 // TODO: generally wrong, wrt specialization.
 @FixmeSpecialization
 internal actual fun <T> Array<out T>.copyToArrayOfAny(isVarargs: Boolean): Array<out Any?> =

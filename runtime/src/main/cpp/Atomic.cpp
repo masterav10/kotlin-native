@@ -16,6 +16,7 @@
 
 #include "Atomic.h"
 #include "Common.h"
+#include "Exceptions.h"
 #include "Memory.h"
 #include "Types.h"
 
@@ -44,8 +45,6 @@ inline AtomicReferenceLayout* asAtomicReference(KRef thiz) {
 
 extern "C" {
 
-RUNTIME_NORETURN void ThrowInvalidMutabilityException();
-
 KInt Kotlin_AtomicInt_addAndGet(KRef thiz, KInt delta) {
     return addAndGetImpl(thiz, delta);
 }
@@ -59,7 +58,21 @@ KLong Kotlin_AtomicLong_addAndGet(KRef thiz, KLong delta) {
 }
 
 KLong Kotlin_AtomicLong_compareAndSwap(KRef thiz, KLong expectedValue, KLong newValue) {
+#ifdef __mips
+    // Potentially huge performance penalty, but correct.
+    // TODO: reconsider, once target MIPS can do proper 64-bit CAS.
+    static int lock = 0;
+    while (compareAndSwap(&lock, 0, 1) != 0);
+    KLong* address = reinterpret_cast<KLong*>(thiz + 1);
+    KLong old = *address;
+    if (old == expectedValue) {
+      *address = newValue;
+    }
+    compareAndSwap(&lock, 1, 0);
+    return old;
+#else
     return compareAndSwapImpl(thiz, expectedValue, newValue);
+#endif
 }
 
 KNativePtr Kotlin_AtomicNativePtr_compareAndSwap(KRef thiz, KNativePtr expectedValue, KNativePtr newValue) {
@@ -68,7 +81,7 @@ KNativePtr Kotlin_AtomicNativePtr_compareAndSwap(KRef thiz, KNativePtr expectedV
 
 void Kotlin_AtomicReference_checkIfFrozen(KRef value) {
     if (value != nullptr && !value->container()->permanentOrFrozen()) {
-        ThrowInvalidMutabilityException();
+        ThrowInvalidMutabilityException(value);
     }
 }
 

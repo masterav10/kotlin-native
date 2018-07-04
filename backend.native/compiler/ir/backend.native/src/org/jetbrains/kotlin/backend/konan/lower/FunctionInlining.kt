@@ -27,6 +27,7 @@ import org.jetbrains.kotlin.backend.konan.descriptors.needsInlining
 import org.jetbrains.kotlin.backend.konan.descriptors.propertyIfAccessor
 import org.jetbrains.kotlin.backend.konan.descriptors.resolveFakeOverride
 import org.jetbrains.kotlin.backend.konan.ir.DeserializerDriver
+import org.jetbrains.kotlin.backend.konan.irasdescriptors.getClass
 import org.jetbrains.kotlin.config.languageVersionSettings
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.ir.IrElement
@@ -40,10 +41,13 @@ import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrGetValueImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrReturnableBlockImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrVarargImpl
+import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.symbols.impl.IrReturnableBlockSymbolImpl
+import org.jetbrains.kotlin.ir.types.classifierOrNull
 import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.util.getArguments
 import org.jetbrains.kotlin.ir.util.irCall
+import org.jetbrains.kotlin.ir.util.transform
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.FqName
@@ -138,7 +142,6 @@ private class Inliner(val globalSubstituteMap: MutableMap<DeclarationDescriptor,
 
     fun inline(irCall: IrCall): IrReturnableBlockImpl {                                     // Call to be substituted.
         val inlineFunctionBody = inlineFunction(irCall, functionDeclaration)
-        copyIrElement.addCurrentSubstituteMap(globalSubstituteMap)
         return inlineFunctionBody
     }
 
@@ -181,9 +184,21 @@ private class Inliner(val globalSubstituteMap: MutableMap<DeclarationDescriptor,
             }
         }
 
-        val returnType = copyFunctionDeclaration.returnType                   // Substituted return type.
         val sourceFileName = context.ir.originalModuleIndex.declarationToFile[caller.descriptor.original]?:""
-        val inlineFunctionBody = IrReturnableBlockImpl(                                     // Create new IR element to replace "call".
+
+        // Update globalSubstituteMap before computing return type.
+        // This is needed because of nested inlining.
+        copyIrElement.addCurrentSubstituteMap(globalSubstituteMap)
+
+        val transformer = ParameterSubstitutor()
+        statements.transform { it.transform(transformer, data = null) }
+        statements.addAll(0, evaluationStatements)
+        val oldDescriptor = (copyFunctionDeclaration.returnType.classifierOrNull as? IrClassSymbol)?.descriptor
+        val substitutedDescriptor = oldDescriptor?.let { globalSubstituteMap[it] }
+        val returnType = substitutedDescriptor?.let { context.ir.translateErased((it.descriptor as ClassDescriptor).defaultType) }
+                ?: copyFunctionDeclaration.returnType
+
+        return IrReturnableBlockImpl(                                     // Create new IR element to replace "call".
             startOffset = startOffset,
             endOffset   = endOffset,
             type        = returnType,
@@ -192,11 +207,6 @@ private class Inliner(val globalSubstituteMap: MutableMap<DeclarationDescriptor,
             statements  = statements,
             sourceFileName = sourceFileName
         )
-
-        val transformer = ParameterSubstitutor()
-        inlineFunctionBody.transformChildrenVoid(transformer)                               // Replace value parameters with arguments.
-        inlineFunctionBody.statements.addAll(0, evaluationStatements)                       // Insert evaluation statements.
-        return inlineFunctionBody                                                           // Replace call site with InlineFunctionBody.
     }
 
     //---------------------------------------------------------------------//

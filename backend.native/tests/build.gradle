@@ -680,6 +680,12 @@ task freeze2(type: RunKonanTest) {
     source = "runtime/workers/freeze2.kt"
 }
 
+task freeze3(type: RunKonanTest) {
+    disabled = (project.testTarget == 'wasm32') // No exceptions on WASM.
+    goldValue = "OK\n"
+    source = "runtime/workers/freeze3.kt"
+}
+
 task atomic0(type: RunKonanTest) {
     disabled = (project.testTarget == 'wasm32') // Workers need pthreads.
     goldValue = "35\n" + "20\n" + "OK\n"
@@ -1900,6 +1906,11 @@ task finally10(type: RunKonanTest) {
 task finally11(type: RunKonanTest) {
     goldValue = "Finally\nCatch 2\nDone\n"
     source = "codegen/try/finally11.kt"
+}
+
+task finally_returnsDifferentTypes(type: RunKonanTest) {
+    goldValue = "zzz\n42\n"
+    source = "codegen/try/returnsDifferentTypes.kt"
 }
 
 task scope1(type: RunKonanTest) {
